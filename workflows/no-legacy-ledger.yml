@@ -1,0 +1,99 @@
+# Reusable workflow: No Legacy Ledger References
+# xonaix organization CI gate
+#
+# This workflow blocks any reference to the deprecated xonaix-authority-ledger
+# repository and its associated non-canonical verification patterns.
+#
+# Canonical verification (post-seal): JSON bytes + .json.asc
+# Non-canonical (blocked): Markdown bytes, .md.asc, gpg --verify in docs
+
+name: No Legacy Ledger References
+
+on:
+  workflow_call:
+    inputs:
+      fail_fast:
+        description: 'Fail immediately on first violation'
+        required: false
+        default: true
+        type: boolean
+
+jobs:
+  no-legacy-ledger-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for xonaix-authority-ledger references
+        run: |
+          echo "Checking for xonaix-authority-ledger references..."
+          HITS=$(grep -r "xonaix-authority-ledger" --include="*.md" --include="*.rs" --include="*.yml" --include="*.yaml" --include="*.toml" . 2>/dev/null | \
+            grep -v "archived/legacy" | \
+            grep -v "do not use" | \
+            grep -v "deprecated" | \
+            head -20) || true
+          if [[ -n "$HITS" ]]; then
+            echo "$HITS"
+            echo ""
+            echo "FAIL: Found references to deprecated xonaix-authority-ledger"
+            echo "      Use xonaix-ledger-authority instead, or mark as 'archived/legacy; do not use'"
+            exit 1
+          fi
+          echo "PASS: No xonaix-authority-ledger references found"
+
+      - name: Check for verify_authority_statement_hardened references
+        run: |
+          echo "Checking for verify_authority_statement_hardened references..."
+          HITS=$(grep -r "verify_authority_statement_hardened" --include="*.md" --include="*.rs" . 2>/dev/null | \
+            grep -v "no_debt" | \
+            grep -v "NO_DEBT" | \
+            grep -v "enforce" | \
+            head -20) || true
+          if [[ -n "$HITS" ]]; then
+            echo "$HITS"
+            echo ""
+            echo "FAIL: Found references to deprecated verify_authority_statement_hardened"
+            echo "      Use ledger_authority_verify crate instead"
+            exit 1
+          fi
+          echo "PASS: No verify_authority_statement_hardened references found"
+
+      - name: Check for .md.asc signature patterns
+        run: |
+          echo "Checking for .md.asc signature patterns..."
+          HITS=$(grep -r "\.md\.asc" --include="*.md" --include="*.rs" . 2>/dev/null | \
+            grep -v "no_debt" | \
+            grep -v "NO_DEBT" | \
+            grep -v "enforce" | \
+            grep -v "ledger_authority_verify" | \
+            head -20) || true
+          if [[ -n "$HITS" ]]; then
+            echo "$HITS"
+            echo ""
+            echo "FAIL: Found .md.asc patterns (non-canonical verification surface)"
+            echo "      Canonical verification uses .json.asc only"
+            exit 1
+          fi
+          echo "PASS: No .md.asc patterns found"
+
+      - name: Check for gpg --verify documentation patterns
+        run: |
+          echo "Checking for gpg --verify in documentation..."
+          HITS=$(grep -r "gpg --verify" --include="*.md" --include="*.rs" . 2>/dev/null | \
+            grep -v "no_debt" | \
+            grep -v "NO_DEBT" | \
+            grep -v "enforce" | \
+            head -20) || true
+          if [[ -n "$HITS" ]]; then
+            echo "$HITS"
+            echo ""
+            echo "FAIL: Found gpg --verify patterns in documentation"
+            echo "      Use ledger_authority_verify crate for verification"
+            exit 1
+          fi
+          echo "PASS: No gpg --verify documentation patterns found"
+
+      - name: Summary
+        run: |
+          echo "=== NO LEGACY LEDGER REFERENCES CHECK PASSED ==="
+          echo "All patterns clean. Repository is free of deprecated ledger references."
