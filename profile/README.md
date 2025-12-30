@@ -7,6 +7,7 @@ Core system repositories for the Xonaix platform.
 | Repository | Description |
 |------------|-------------|
 | [xonaix-specs](https://github.com/xonaix/xonaix-specs) | Canonical specifications, governance, and audit materials |
+| [xonaix-canonical](https://github.com/xonaix/xonaix-canonical) | Canonical JSON and SHA-256 primitives (L1 trust class) |
 | [xonaix-core](https://github.com/xonaix/xonaix-core) | Rust implementation |
 | [xonaix-ledger-authority](https://github.com/xonaix/xonaix-ledger-authority) | Rust authority ledger |
 | [xonaix-authority-ledger](https://github.com/xonaix/xonaix-authority-ledger) | *(archived/legacy; slated for deprecation once xonaix-ledger-authority reaches parity)* |
